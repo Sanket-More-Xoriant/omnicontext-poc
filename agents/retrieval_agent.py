@@ -1,25 +1,45 @@
-import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 class RetrievalAgent:
-   def search(
-       self,
-       query,
-       vectorizer,
-       index,
-       chunks,
-       top_k=3
-   ):
-       query_vector = (
-           vectorizer
-           .transform([query])
-           .toarray()
-       )
-       distances, indices = index.search(
-           np.array(query_vector, dtype=np.float32),
-           top_k
-       )
-       results = []
-       for idx in indices[0]:
-           if 0 <= idx < len(chunks):
-               results.append(chunks[idx])
-       return results
+
+    def tfidf_search(
+        self,
+        question,
+        vectorizer,
+        vectors,
+        chunks,
+        top_k=10
+    ):
+
+        query_vector = (
+            vectorizer.transform(
+                [question]
+            )
+        )
+
+        similarities = (
+            cosine_similarity(
+                query_vector,
+                vectors
+            )
+            .flatten()
+        )
+
+        top_indices = (
+            similarities.argsort()
+            [-top_k:]
+            [::-1]
+        )
+
+        results = []
+
+        for idx in top_indices:
+
+            if 0 <= idx < len(chunks):
+
+                results.append(
+                    chunks[idx]
+                )
+
+        return results

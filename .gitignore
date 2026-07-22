@@ -1,20 +1,19 @@
-# Environment
-.env
+# Virtual Environment
+venv/
+.venv/
 
-# Google credentials
-*.json
-
-# Python cache
+# Python Cache
 __pycache__/
 *.pyc
 
-# Virtual environment
-venv/
+# Environment Variables
+.env
 
-# Generated data
-data/repository_cache.json
-data/faiss.index
-data/generated_spec.json
+# Secrets
+*.json
 
 # VS Code
 .vscode/
+
+# Logs
+*.log

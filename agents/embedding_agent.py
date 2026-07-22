@@ -1,12 +1,22 @@
-import faiss
-import numpy as np
-
-from sklearn.feature_extraction.text import (
-    TfidfVectorizer
-)
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class EmbeddingAgent:
+
+    def __init__(self):
+
+        print(
+            "\nCreating TF-IDF Engine..."
+        )
+
+        self.vectorizer = TfidfVectorizer(
+            max_features=5000,
+            stop_words="english"
+        )
+
+        print(
+            "✅ TF-IDF Engine Ready"
+        )
 
     def create_embeddings(
         self,
@@ -14,38 +24,45 @@ class EmbeddingAgent:
     ):
 
         corpus = [
-            chunk["content"]
+
+            chunk.get(
+                "content",
+                ""
+            )
+
             for chunk in chunks
         ]
 
-        vectorizer = TfidfVectorizer(
-            max_features=5000
+        print(
+            f"\nGenerating TF-IDF vectors "
+            f"for {len(corpus)} chunks..."
         )
 
         vectors = (
-            vectorizer
-            .fit_transform(corpus)
-            .toarray()
-        )
-
-        return vectors, vectorizer
-
-    def create_faiss_index(
-        self,
-        vectors
-    ):
-
-        dimension = vectors.shape[1]
-
-        index = faiss.IndexFlatL2(
-            dimension
-        )
-
-        index.add(
-            np.array(
-                vectors,
-                dtype=np.float32
+            self.vectorizer
+            .fit_transform(
+                corpus
             )
         )
 
-        return index
+        print(
+            f"\nVector Shape: "
+            f"{vectors.shape}"
+        )
+
+        return (
+            vectors,
+            self.vectorizer
+        )
+
+    def create_query_embedding(
+        self,
+        question
+    ):
+
+        return (
+            self.vectorizer
+            .transform(
+                [question]
+            )
+        )

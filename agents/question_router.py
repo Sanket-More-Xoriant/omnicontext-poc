@@ -1,3 +1,6 @@
+import re
+
+
 class QuestionRouter:
 
     REPO_OVERVIEW_WORDS = [
@@ -20,7 +23,6 @@ class QuestionRouter:
     ]
 
     PR_WORDS = [
-        "pr",
         "pull request",
         "pull requests"
     ]
@@ -47,12 +49,18 @@ class QuestionRouter:
 
         question = question.lower()
 
-        return any(
-            word in question
-            for word in (
-                QuestionRouter
-                .COMMIT_WORDS
-            )
+        return (
+            re.search(
+                r"\bcommit\b",
+                question
+            ) is not None
+            or
+            re.search(
+                r"\bcommits\b",
+                question
+            ) is not None
+            or
+            "development trends" in question
         )
 
     @staticmethod
@@ -62,10 +70,13 @@ class QuestionRouter:
 
         question = question.lower()
 
-        return any(
-            word in question
-            for word in (
-                QuestionRouter
-                .PR_WORDS
-            )
+        return (
+            re.search(
+                r"\bpr\b",
+                question
+            ) is not None
+            or
+            "pull request" in question
+            or
+            "pull requests" in question
         )
