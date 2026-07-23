@@ -29,7 +29,7 @@ class MCPConnection:
                 f"Bearer {token}"
         }
 
-    async def create_session(self):
+    def create_session(self):
 
         return streamablehttp_client(
             self.MCP_URL,
