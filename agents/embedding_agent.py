@@ -1,21 +1,21 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-
+from sentence_transformers import (
+    SentenceTransformer
+)
 
 class EmbeddingAgent:
 
     def __init__(self):
 
         print(
-            "\nCreating TF-IDF Engine..."
+            "\nLoading Sentence Transformer..."
         )
 
-        self.vectorizer = TfidfVectorizer(
-            max_features=5000,
-            stop_words="english"
+        self.model = SentenceTransformer(
+            "all-MiniLM-L6-v2"
         )
 
         print(
-            "✅ TF-IDF Engine Ready"
+            "✅ Embedding Model Ready"
         )
 
     def create_embeddings(
@@ -24,45 +24,31 @@ class EmbeddingAgent:
     ):
 
         corpus = [
-
             chunk.get(
                 "content",
                 ""
             )
-
             for chunk in chunks
         ]
 
-        print(
-            f"\nGenerating TF-IDF vectors "
-            f"for {len(corpus)} chunks..."
-        )
-
-        vectors = (
-            self.vectorizer
-            .fit_transform(
-                corpus
-            )
+        embeddings = self.model.encode(
+            corpus,
+            convert_to_numpy=True,
+            show_progress_bar=True
         )
 
         print(
-            f"\nVector Shape: "
-            f"{vectors.shape}"
+            f"Embedding Shape: {embeddings.shape}"
         )
 
-        return (
-            vectors,
-            self.vectorizer
-        )
+        return embeddings
 
     def create_query_embedding(
         self,
         question
     ):
 
-        return (
-            self.vectorizer
-            .transform(
-                [question]
-            )
+        return self.model.encode(
+            question,
+            convert_to_numpy=True
         )

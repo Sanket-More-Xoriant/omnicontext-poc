@@ -1,45 +1,51 @@
-from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
+from sklearn.metrics.pairwise import (
+    cosine_similarity
+)
 
 class RetrievalAgent:
 
-    def tfidf_search(
+    def semantic_search(
         self,
         question,
-        vectorizer,
-        vectors,
+        embedding_agent,
+        embeddings,
         chunks,
         top_k=10
     ):
 
-        query_vector = (
-            vectorizer.transform(
-                [question]
+        query_embedding = (
+            embedding_agent
+            .create_query_embedding(
+                question
             )
+            .reshape(1, -1)
         )
 
         similarities = (
             cosine_similarity(
-                query_vector,
-                vectors
-            )
-            .flatten()
+                query_embedding,
+                embeddings
+            )[0]
         )
 
         top_indices = (
-            similarities.argsort()
-            [-top_k:]
-            [::-1]
+            np.argsort(
+                similarities
+            )[::-1][:top_k]
         )
 
         results = []
 
         for idx in top_indices:
 
-            if 0 <= idx < len(chunks):
-
-                results.append(
-                    chunks[idx]
-                )
+            results.append({
+                "chunk": chunks[idx],
+                "score": float(
+                    similarities[idx]
+                ),
+                "retriever": "semantic"
+            })
 
         return results

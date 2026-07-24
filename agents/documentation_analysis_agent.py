@@ -39,13 +39,15 @@ class DocumentationAnalysisAgent:
             "guide",
             "concept",
             "tutorial",
-            "architecture"
+            "architecture",
+            "plugin",
+            "glossary"
         ]
 
         for item in repository:
 
             path = item.get(
-                "path",
+                "file_path",
                 ""
             )
 
@@ -58,8 +60,7 @@ class DocumentationAnalysisAgent:
 
             is_documentation = (
                 path.endswith(".md")
-                or
-                any(
+                or any(
                     keyword in path_lower
                     for keyword in documentation_keywords
                 )

@@ -1,5 +1,51 @@
 class HybridRetrievalAgent:
 
+    def retrieve(
+        self,
+        semantic_results,
+        bm25_results,
+        top_k=15
+    ):
+
+        fused = {}
+
+        for result in (
+            semantic_results +
+            bm25_results
+        ):
+
+            chunk = result["chunk"]
+
+            content = chunk.get(
+                "content",
+                ""
+            )
+
+            score = result["score"]
+
+            if chunk.get("is_code"):
+                score *= 1.25
+
+            if content not in fused:
+
+                fused[content] = {
+                    "chunk": chunk,
+                    "score": 0
+                }
+
+            fused[content]["score"] += score
+
+        ranked = sorted(
+            fused.values(),
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+        return [
+            item["chunk"]
+            for item in ranked[:top_k]
+        ]
+
     def build_context(
         self,
         technical_chunks,
