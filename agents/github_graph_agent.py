@@ -1,5 +1,6 @@
 import ast
 import os
+import json
 
 from data.graph_schema import (
     GraphNode,
@@ -118,6 +119,77 @@ class GitHubGraphAgent:
                 )
 
         return graph
+    def find_commits_by_author(
+        self,
+        graph,
+        author
+    ):
+
+        commits = []
+
+        for edge in graph.edges:
+
+            if (
+                edge.source == author
+                and edge.relationship == "AUTHORED"
+            ):
+
+                commits.append(
+                    edge.target
+                )
+
+        return commits
+
+    def find_branch_head_commit(
+        self,
+        graph,
+        branch_name
+    ):
+
+        for edge in graph.edges:
+
+            if (
+                edge.source == branch_name
+                and edge.relationship == "HEAD_COMMIT"
+            ):
+
+                return edge.target
+
+        return None
+
+
+    def get_latest_commit(
+            self,
+            graph
+        ):
+
+            for edge in graph.edges:
+
+                if edge.relationship == "HEAD_COMMIT":
+
+                    return edge.target
+
+            return None
+
+
+    def get_commit_author(
+            self,
+            graph,
+            commit_id
+        ):
+
+            for edge in graph.edges:
+
+                if (
+                    edge.target == commit_id
+                    and edge.relationship == "AUTHORED"
+                ):
+
+                    return edge.source
+
+            return None
+
+
 
     def build_github_graph(self):
 
@@ -171,6 +243,8 @@ class GitHubGraphAgent:
 
         return graph
 
+
+
     async def build_mcp_repository_graph(
         self,
         github_client,
@@ -192,7 +266,6 @@ class GitHubGraphAgent:
         )
 
         # Pull Requests
-
         try:
 
             prs = await github_client.list_pull_requests(
@@ -209,6 +282,46 @@ class GitHubGraphAgent:
                 if "number" in line.lower():
 
                     try:
+            print("\nPR RAW RESPONSE:")
+            print(prs)
+            print(type(prs))
+
+            if prs.content:
+
+                json_text = prs.content[0].text
+
+                pr_data = json.loads(
+                    json_text
+                )
+
+                for pr in pr_data:
+
+                    pr_id = (
+                        f"PR-{pr['number']}"
+                    )
+
+                    graph.add_node(
+                        GraphNode(
+                            pr_id,
+                            "PullRequest"
+                        )
+                    )
+
+                    graph.add_edge(
+                        GraphEdge(
+                            repo_id,
+                            pr_id,
+                            "HAS_PR"
+                        )
+                    )
+
+        except Exception as e:
+
+            print(
+                f"PR Error: {e}"
+            )
+
+            try:
 
                         pr_number = (
                             line.split(":")[-1]
@@ -220,11 +333,14 @@ class GitHubGraphAgent:
                         )
 
                         graph.add_node(
-                            GraphNode(
-                                pr_id,
-                                "PullRequest"
-                            )
+                        GraphNode(
+                            pr_id,
+                            "PullRequest",
+                            {
+                                "title": line
+                            }
                         )
+                    )
 
                         graph.add_edge(
                             GraphEdge(
@@ -235,6 +351,7 @@ class GitHubGraphAgent:
                         )
 
                     except Exception:
+            except Exception:
 
                         pass
 
@@ -245,68 +362,130 @@ class GitHubGraphAgent:
             )
 
         # Commits
-
         try:
 
-            commits = (
-                await github_client.list_commits(
-                    owner,
-                    repo
+            commits = await github_client.list_commits(
+                owner,
+                repo
+            )
+
+            if commits.content:
+
+                json_text = commits.content[0].text
+
+                commit_data = json.loads(
+                    json_text
                 )
-            )
 
-            commit_text = str(
-                commits
-            )
+                for commit in commit_data:
 
-            lines = (
-                commit_text.split("\n")
-            )
+                    sha = commit.get(
+                        "sha",
+                        ""
+                    )
 
-            commit_count = 0
+                    author = (
+                        commit.get("author") or {}
+                    ).get(
+                        "login",
+                        "Unknown"
+                    )
 
-            for line in lines:
-
-                if "sha" in line.lower():
-
-                    try:
-
-                        sha = (
-                            line.split(":")[-1]
-                            .strip()
+                    graph.add_node(
+                        GraphNode(
+                            author,
+                            "Contributor"
                         )
+                    )
 
-                        commit_id = sha[:7]
+                    if not sha:
+                        continue
 
-                        graph.add_node(
-                            GraphNode(
-                                commit_id,
-                                "Commit"
-                            )
+                    commit_id = sha[:7]
+
+                    graph.add_node(
+                        GraphNode(
+                            commit_id,
+                            "Commit",
+                            {
+                                "message":
+                                commit["commit"]["message"]
+                            }
                         )
+                    )
 
-                        graph.add_edge(
-                            GraphEdge(
-                                repo_id,
-                                commit_id,
-                                "HAS_COMMIT"
-                            )
+                    graph.add_edge(
+                        GraphEdge(
+                            repo_id,
+                            commit_id,
+                            "HAS_COMMIT"
                         )
+                    )
 
-                        commit_count += 1
-
-                        if commit_count > 20:
-
-                            break
-
-                    except Exception:
-
-                        pass
+                    graph.add_edge(
+                        GraphEdge(
+                            author,
+                            commit_id,
+                            "AUTHORED"
+                        )
+                    )
 
         except Exception as e:
 
             print(
                 f"Commit Error: {e}"
             )
+
+        # Branches
+        try:
+
+            branches = await github_client.list_branches(
+                owner,
+                repo
+            )
+
+            if branches.content:
+
+                json_text = branches.content[0].text
+
+                branch_data = json.loads(
+                    json_text
+                )
+
+            for branch in branch_data:
+
+                branch_name = branch["name"]
+
+                branch_sha = branch["sha"][:7]
+
+                graph.add_node(
+                    GraphNode(
+                        branch_name,
+                        "Branch"
+                    )
+                )
+
+                graph.add_edge(
+                    GraphEdge(
+                        repo_id,
+                        branch_name,
+                        "HAS_BRANCH"
+                    )
+                )
+
+                graph.add_edge(
+                    GraphEdge(
+                        branch_name,
+                        branch_sha,
+                        "HEAD_COMMIT"
+                    )
+                )
+
+        except Exception as e:
+
+            print(
+                f"Branch Error: {e}"
+            )
+
 
         return graph

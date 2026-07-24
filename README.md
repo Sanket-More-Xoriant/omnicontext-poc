@@ -1,85 +1,179 @@
-# Retrosync POC
+# OmniContext POC
 
-GitHub Repository Intelligence Platform built using GitHub Remote MCP, FAISS, RAG, and Vertex AI Gemini.
+An AI-powered Repository Intelligence and Knowledge Retrieval Platform built using GitHub MCP, Atlassian MCP, Hybrid RAG, Knowledge Graphs, Neo4j, FAISS, and Vertex AI Gemini.
+
+---
 
 ## Overview
 
-This project demonstrates end-to-end repository analysis using the GitHub Remote MCP Server.
+OmniContext enables intelligent repository and knowledge discovery by combining:
 
-The application can:
+- GitHub MCP integration
+- Atlassian MCP integration
+- Hybrid RAG retrieval
+- Knowledge Graph generation
+- Neo4j graph database
+- Semantic search using FAISS
+- AI-powered question answering using Vertex AI Gemini
 
-- Connect to GitHub Remote MCP Server
-- Retrieve repository contents
-- Build a repository cache
-- Generate embeddings and perform semantic search
-- Answer repository-specific questions
-- Generate repository overviews
-- Analyze commits and pull requests
-- Generate repository specifications
-- Provide source citations for answers
+The platform transforms repository metadata into a graph structure and combines graph-based retrieval with vector-based retrieval to provide context-aware, relationship-aware answers.
+
+---
+
+## Key Features
+
+### GitHub MCP Integration
+
+- Connect to GitHub Remote MCP
+- Retrieve repositories, commits, branches, and pull requests
+- Repository metadata extraction
+- Dynamic repository intelligence
+
+### Atlassian MCP Integration
+
+- Jira issue retrieval
+- Project knowledge discovery
+- Enterprise knowledge integration
+
+### Hybrid RAG
+
+- Document chunking and indexing
+- Semantic similarity search
+- FAISS-based retrieval
+- Context-aware question answering
+
+### Graph Schema Design
+
+Dynamic knowledge graph generation from GitHub data.
+
+#### Entities
+
+- Repository
+- Branch
+- Commit
+- Contributor
+
+#### Relationships
+
+- HAS_COMMIT
+- HAS_BRANCH
+- AUTHORED
+- HEAD_COMMIT
+
+### Graph Retrieval
+
+Supports graph traversal and graph-based question answering.
+
+Sample Graph Questions:
+
+```text
+Who made the latest changes?
+
+What is the head commit of main?
+
+Show all commits by Sanket-More-Xoriant.
+```
+
+### Neo4j Integration
+
+- Graph persistence in Neo4j
+- Cypher query support
+- Graph visualization
+- Relationship exploration
+- Graph-based retrieval workflows
+
+### Repository Analysis
+
+- Repository overview generation
+- Architecture analysis
+- Module discovery
+- Specification generation
+- Engineering insights
 
 ---
 
 ## Architecture
 
 ```text
-GitHub Remote MCP
-        ↓
-Repository Cache
-        ↓
-Chunking
-        ↓
-TF-IDF Embeddings
-        ↓
-FAISS
-        ↓
-Retrieval
-        ↓
-Vertex AI Gemini
-        ↓
-Repository Analysis & Q&A
+                    User Question
+                           │
+                           ▼
+                   Question Router
+                      /        \
+                     /          \
+                    ▼            ▼
+
+             Graph Retrieval   Vector Retrieval
+                 (Neo4j)          (FAISS)
+
+                    \            /
+                     \          /
+                      ▼        ▼
+
+                   Combined Context
+                           │
+                           ▼
+                   Vertex AI Gemini
+                           │
+                           ▼
+                     Final Answer
 ```
 
 ---
 
-## Features
+## Knowledge Graph Architecture
 
-### Repository Analysis
-- Repository overview generation
-- Repository architecture analysis
-- Major module identification
+```text
+GitHub MCP
+     │
+     ▼
 
-### Semantic Repository Search
-- Chunk-based indexing
-- FAISS vector search
-- Context-aware Q&A
+Repository
+ ├── HAS_BRANCH ───► Branch
+ ├── HAS_COMMIT ───► Commit
+ │
+Contributor
+ └── AUTHORED ────► Commit
 
-### GitHub MCP Integration
-- Repository content retrieval
-- File discovery
-- Repository intelligence
+Branch
+ └── HEAD_COMMIT ─► Commit
+```
 
-### Commit Analysis
-- Recent development trends
-- Feature analysis
-- Bug fix analysis
+---
 
-### Pull Request Analysis
-- PR trend analysis
-- Engineering focus areas
-- Architecture change insights
+## Neo4j Graph Integration
 
-### Specification Generation
-- Automated repository specifications
-- Project summaries
-- Architecture documentation
+The generated GitHub knowledge graph is persisted into Neo4j and can be queried using Cypher.
+
+Example Query:
+
+```cypher
+MATCH (n)-[r]->(m)
+RETURN n,r,m
+```
+
+Example Output:
+
+```text
+Repository
+  ├─ HAS_BRANCH ─► main
+  ├─ HAS_COMMIT ─► f5aa180
+
+Contributor
+  └─ AUTHORED ─► f5aa180
+
+main
+  └─ HEAD_COMMIT ─► f5aa180
+```
 
 ---
 
 ## Tech Stack
 
 - Python
-- GitHub Remote MCP Server
+- GitHub MCP
+- Atlassian MCP
+- Neo4j
 - FAISS
 - Vertex AI Gemini
 - Scikit-Learn
@@ -90,16 +184,28 @@ Repository Analysis & Q&A
 ## Project Structure
 
 ```text
-retrosync-poc/
+omnicontext-poc/
 │
 ├── agents/
+│   ├── github_graph_agent.py
+│   ├── graph_retrieval_agent.py
+│   ├── neo4j_graph_loader.py
+│   └── ...
+│
 ├── connectors/
-├── llm/
+│   ├── github_mcp_client.py
+│   ├── neo4j_connector.py
+│   └── ...
+│
 ├── data/
+├── llm/
 │
 ├── app.py
 ├── requirements.txt
-├── .env.example
+├── test_graph_retrieval.py
+├── test_graph_qa.py
+├── test_neo4j_connection.py
+├── test_neo4j_load.py
 └── README.md
 ```
 
@@ -110,7 +216,7 @@ retrosync-poc/
 ### Clone Repository
 
 ```bash
-git clone https://github.com/Sanket-More-Xoriant/retrosync-poc.git
+git clone https://github.com/Sanket-More-Xoriant/omnicontext-poc.git
 ```
 
 ### Create Virtual Environment
@@ -119,7 +225,7 @@ git clone https://github.com/Sanket-More-Xoriant/retrosync-poc.git
 python -m venv venv
 ```
 
-### Activate
+### Activate Environment
 
 ```bash
 venv\Scripts\activate
@@ -128,7 +234,7 @@ venv\Scripts\activate
 ### Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### Configure Environment
@@ -145,27 +251,130 @@ using:
 .env.example
 ```
 
-### Run
+---
+
+## Neo4j Setup
+
+Install Neo4j Desktop.
+
+Create Local Instance:
+
+```text
+Instance Name:
+omnicontext-graph
+
+User:
+neo4j
+
+Password:
+********
+```
+
+Start the database.
+
+Verify connection:
 
 ```bash
-python app.py
+python test_neo4j_connection.py
+```
+
+Expected Output:
+
+```text
+Neo4j Connected
 ```
 
 ---
 
-## Sample Questions
+## Running Graph Features
 
-```text
-What are the major modules in this repository?
+### Build GitHub Graph
 
-Explain repository architecture.
-
-How does MCP work in this repository?
-
-Analyze recent commits.
-
-Analyze recent pull requests.
-
-Explain Pinecone integration.
+```bash
+python test_mcp_graph.py
 ```
 
+### Test Graph Retrieval
+
+```bash
+python test_graph_retrieval.py
+```
+
+### Test Natural Language Graph QA
+
+```bash
+python test_graph_qa.py
+```
+
+### Load Graph Into Neo4j
+
+```bash
+python test_neo4j_load.py
+```
+
+---
+
+## Example Graph Questions
+
+```text
+Who made the latest changes?
+
+What is the head commit of main?
+
+Show all commits authored by Sanket-More-Xoriant.
+
+What is the latest commit in the repository?
+```
+
+Example Response:
+
+```json
+{
+  "author": "Sanket-More-Xoriant",
+  "commit": "f5aa180"
+}
+```
+
+---
+
+## Current Capabilities
+
+✅ GitHub MCP Integration
+
+✅ Atlassian MCP Integration
+
+✅ Repository Analysis
+
+✅ Hybrid RAG
+
+✅ FAISS Semantic Search
+
+✅ Knowledge Graph Generation
+
+✅ Graph Retrieval Agent
+
+✅ Natural Language Graph Queries
+
+✅ Neo4j Integration
+
+✅ Cypher-Based Graph Exploration
+
+---
+
+## Roadmap
+
+- Neo4j-based Graph Retrieval
+- Graph RAG
+- Hybrid RAG + Graph RAG
+- Multi-MCP Knowledge Graph
+- Jira Graph Integration
+- Repository Dependency Graph
+- End-to-End Intelligent Knowledge Assistant
+
+---
+
+## Author
+
+Sanket More
+
+Software Engineer | AI Engineering | MCP | RAG | Knowledge Graphs | Neo4j

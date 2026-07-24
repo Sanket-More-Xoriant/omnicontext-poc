@@ -5,13 +5,13 @@ class DocumentationAnalysisAgent:
 
     def analyze(
         self,
-        repository_cache_path="data/repository_cache.json"
+        cache_file
     ):
 
         try:
 
             with open(
-                repository_cache_path,
+                cache_file,
                 "r",
                 encoding="utf-8"
             ) as file:

@@ -5,11 +5,12 @@ class RepositoryAnalysisAgent:
 
     def analyze(
         self,
-        gemini
+        gemini,
+        cache_file
     ):
 
         with open(
-            "data/repository_cache.json",
+            cache_file,
             "r",
             encoding="utf-8"
         ) as file:

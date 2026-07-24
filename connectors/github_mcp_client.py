@@ -20,6 +20,15 @@ class GitHubMCPClient:
             f"extension:{extension}"
         )
 
+        query = (
+    f"repo:{repository} "
+    f"extension:{extension}"
+)
+
+        print(
+            f"\nSEARCH QUERY: {query}"
+        )
+
         return await self.session.call_tool(
             "search_code",
             {
