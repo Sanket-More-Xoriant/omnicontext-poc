@@ -4,16 +4,16 @@ import json
 class ArchitectureAnalysisAgent:
 
     def analyze(
-        self,
-        repository_cache_path="data/repository_cache.json"
+      self,
+      cache_file
     ):
 
         try:
 
             with open(
-                repository_cache_path,
-                "r",
-                encoding="utf-8"
+            cache_file,
+            "r",
+            encoding="utf-8"
             ) as file:
 
                 repository = json.load(
@@ -29,7 +29,7 @@ class ArchitectureAnalysisAgent:
         for item in repository:
 
             path = item.get(
-                "path",
+                "file_path",
                 ""
             )
 

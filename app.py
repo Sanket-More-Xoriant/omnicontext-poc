@@ -61,6 +61,14 @@ from agents.specification_analysis_agent import (
     SpecificationAnalysisAgent
 )
 
+from agents.github_agent import (
+    GitHubAgent
+)
+
+from agents.chroma_agent import (
+    ChromaAgent
+)
+
 
 load_dotenv()
 
@@ -68,22 +76,36 @@ load_dotenv()
 MCP_URL = "https://api.githubcopilot.com/mcp/"
 
 
-async def main():
+async def main(
+    owner: str,
+    repo: str
+):
 
     print("\nStarting Retrosync...\n")
 
-    repository = os.getenv(
-        "GITHUB_REPOSITORY"
-    )
+    # repository = os.getenv(
+    #     "GITHUB_REPOSITORY"
+    # )
 
-    owner, repo = repository.split("/")
+    # if not owner or not repo:
+    #     owner, repo = repository.split("/")
+
+    cache_file = (
+    f"data/cache/"
+    f"{owner}_{repo}.json"
+    )
 
     token = os.getenv(
         "GITHUB_PAT"
     )
 
     print(
-        f"Repository: {repository}"
+        f"Repository: {owner}/{repo}"
+    )
+
+    cache_file = (
+    f"data/cache/"
+    f"{owner}_{repo}.json"
     )
 
     print(
@@ -119,14 +141,37 @@ async def main():
                 )
             )
 
+            github_agent = (
+                GitHubAgent(
+                    github_client
+                )
+            )
+
+            print(
+                "\nRefreshing Repository Cache..."
+            )
+
+            cache_file = await github_agent.cache_repository(
+                owner,
+                repo
+            )
+
+            print(
+                "\nRepository Cache Updated ✅"
+            )
+
             print(
                 "\nLoading Chunks..."
             )
 
             chunks = (
                 ChunkingAgent()
-                .create_chunks()
+                .create_chunks(
+                    cache_file
+                )
             )
+
+            chroma_agent = ChromaAgent()
 
             print(
                 f"Chunks Loaded: "
@@ -136,7 +181,13 @@ async def main():
             print(
     "\nBuilding BM25 Index..."
             )
+            if len(chunks) == 0:
 
+                print(
+                    "\nNo repository files found."
+                )
+
+                return
             bm25_agent = BM25Agent(
                 chunks
             )
@@ -160,8 +211,24 @@ async def main():
                 )
             )
 
+            dense_vectors = (
+            vectors.toarray()
+        )
+
             print(
                 "\nTF-IDF Ready ✅"
+            )
+
+            chroma_agent = ChromaAgent()
+
+            chroma_agent.store_chunks(
+                f"{owner}_{repo}",
+                chunks,
+                dense_vectors
+            )
+
+            print(
+                "\nChunks Saved To ChromaDB ✅"
             )
 
             retrieval_agent = (
@@ -219,7 +286,8 @@ async def main():
                         answer = (
                             RepositoryAnalysisAgent()
                             .analyze(
-                                gemini
+                                gemini,
+                                cache_file
                             )
                         )
 
@@ -475,7 +543,8 @@ async def main():
                             repository_context = (
                                 RepositoryAnalysisAgent()
                                 .analyze(
-                                    gemini
+                                    gemini,
+                                    cache_file
                                 )
                             )
 
@@ -491,7 +560,9 @@ async def main():
 
                         architecture_context = (
                             ArchitectureAnalysisAgent()
-                            .analyze()
+                            .analyze(
+                                cache_file
+                            )
                         )
                         print(
                             "\nARCHITECTURE CONTEXT PREVIEW:\n"
@@ -534,7 +605,9 @@ async def main():
 
                         documentation_context = (
                             DocumentationAnalysisAgent()
-                            .analyze()
+                            .analyze(
+                                cache_file
+                            )
                         )
 
                         print(
@@ -766,4 +839,15 @@ async def main():
 
 if __name__ == "__main__":
 
-    asyncio.run(main())
+    repository = input(
+        "\nEnter Repository (owner/repo): "
+    )
+
+    owner, repo = repository.split("/")
+
+    asyncio.run(
+        main(
+            owner,
+            repo
+        )
+    )

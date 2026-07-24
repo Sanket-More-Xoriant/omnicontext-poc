@@ -24,10 +24,13 @@ class ChunkingAgent:
             chunk_overlap=self.chunk_overlap
         )
 
-    def create_chunks(self):
+    def create_chunks(
+    self,
+    cache_file
+):
 
         with open(
-            "data/repository_cache.json",
+            cache_file,
             "r",
             encoding="utf-8"
         ) as f:

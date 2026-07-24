@@ -1,10 +1,6 @@
 import json
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 
 class GitHubAgent:
 
@@ -25,13 +21,13 @@ class GitHubAgent:
     ):
         self.github_client = github_client
 
-    async def cache_repository(self):
+    async def cache_repository(
+        self,
+        owner,
+        repo
+    ):
 
-        repository = os.getenv(
-            "GITHUB_REPOSITORY"
-        )
-
-        owner, repo = repository.split("/")
+        repository = f"{owner}/{repo}"
 
         documents = []
 
@@ -51,15 +47,25 @@ class GitHubAgent:
                 )
             )
 
+            print("\nRAW SEARCH RESULT:")
+            print(search_result)
+
             raw_json = (
                 search_result.content[0].text
             )
 
-            data = json.loads(raw_json)
+            data = json.loads(
+                raw_json
+            )
 
             items = data.get(
                 "items",
                 []
+            )
+
+            print(
+                f"{extension} files found: "
+                f"{len(items)}"
             )
 
             for item in items[:50]:
@@ -103,11 +109,23 @@ class GitHubAgent:
                         f"{path}: {ex}"
                     )
 
+        cache_file = (
+            f"data/cache/"
+            f"{owner}_{repo}.json"
+        )
+
+
+        os.makedirs(
+            "data/cache",
+            exist_ok=True
+        )
+
         with open(
-            "data/repository_cache.json",
+            cache_file,
             "w",
             encoding="utf-8"
         ) as f:
+
 
             json.dump(
                 documents,
@@ -121,4 +139,4 @@ class GitHubAgent:
             f"{len(documents)} files"
         )
 
-        return documents
+        return cache_file
