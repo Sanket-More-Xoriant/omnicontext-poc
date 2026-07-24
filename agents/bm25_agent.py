@@ -32,7 +32,14 @@ class BM25Agent:
             reverse=True
         )
 
-        return [
-            self.chunks[idx]
-            for idx, score in ranked[:top_k]
-        ]
+        results = []
+
+        for idx, score in ranked[:top_k]:
+
+            results.append({
+                "chunk": self.chunks[idx],
+                "score": float(score),
+                "retriever": "bm25"
+            })
+
+        return results

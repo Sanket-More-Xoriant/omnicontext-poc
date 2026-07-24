@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from agents.bm25_agent import BM25Agent
+from collections import Counter
 
 from mcp import ClientSession
 from mcp.client.streamable_http import (
@@ -170,6 +171,15 @@ async def main(
                     cache_file
                 )
             )
+            print("\n===== SAMPLE CHUNK =====")
+
+            print(
+                chunks[0]["source_file"]
+            )
+
+            print(
+                chunks[0]["content"][:300]
+            )
 
             chroma_agent = ChromaAgent()
 
@@ -177,6 +187,18 @@ async def main(
                 f"Chunks Loaded: "
                 f"{len(chunks)}"
             )
+            file_counts = Counter(
+                chunk["source_file"]
+                for chunk in chunks
+            )
+
+            print("\n===== TOP CHUNKED FILES =====")
+
+            for file, count in file_counts.most_common(20):
+
+                print(
+                    f"{count} chunks -> {file}"
+                )
             
             print(
     "\nBuilding BM25 Index..."
@@ -204,19 +226,24 @@ async def main(
                 EmbeddingAgent()
             )
 
-            vectors, vectorizer = (
+            embeddings = (
                 embedding_agent
                 .create_embeddings(
                     chunks
                 )
             )
+            
+            print(
+                f"Embedding Shape: {embeddings.shape}"
+            )
+
 
             dense_vectors = (
             vectors.toarray()
         )
 
             print(
-                "\nTF-IDF Ready ✅"
+                "\nSentence Embeddings Ready ✅"
             )
 
             chroma_agent = ChromaAgent()
@@ -389,72 +416,113 @@ async def main(
 
                     try:
 
-                        tfidf_chunks = (
+                        semantic_chunks = (
                             retrieval_agent
-                            .tfidf_search(
+                            .semantic_search(
                                 question,
-                                vectorizer,
-                                vectors,
+                                embedding_agent,
+                                embeddings,
                                 chunks,
-                                top_k=10
+                                top_k=20
                             )
                         )
 
+                    
                     except Exception as ex:
 
                         print(
-                            f"\nTF-IDF Retrieval Error: {ex}"
+                            f"\nSemantic Retrieval Error: {ex}"
                         )
 
-                        tfidf_chunks = []
+                        semantic_chunks = []
+
 
 
                     bm25_chunks = (
                         bm25_agent
                         .search(
                             question,
-                            top_k=10
+                            top_k=20
                         )
                     )
 
-                    combined_chunks = []
-
-                    seen = set()
-
-                    for chunk in (
-                        tfidf_chunks +
-                        bm25_chunks
-                    ):
-
-                        content = chunk.get(
-                            "content",
-                            ""
+                    combined_chunks = (
+                        hybrid_agent.retrieve(
+                            semantic_chunks,
+                            bm25_chunks,
+                            top_k=15
                         )
+                    )
 
-                        if content not in seen:
-
-                            combined_chunks.append(
-                                chunk
-                            )
-
-                            seen.add(
-                                content
-                            )
-
+                    
                     print(
                         f"\nBM25 Chunks: "
                         f"{len(bm25_chunks)}"
                     )
 
+                    print("\n===== BM25 RESULTS =====")
+
+                    for result in bm25_chunks[:10]:
+
+                        print(
+                            result["chunk"].get(
+                                "source_file",
+                                "Unknown"
+                            )
+                        )
+
+                        print(
+                            f"Score: {result['score']}"
+                        )
+
                     print(
-                        f"TF-IDF Chunks: "
-                        f"{len(tfidf_chunks)}"
+                        f"Semantic Chunks: "
+                        f"{len(semantic_chunks)}"
                     )
+                    print("\n===== SEMANTIC RESULTS =====")
+
+                    for result in semantic_chunks[:10]:
+
+                        print(
+                            result["chunk"].get(
+                                "source_file",
+                                "Unknown"
+                            )
+                        )
+
+                        print(
+                            f"Score: {result['score']}"
+                        )
 
                     print(
                         f"Combined Chunks: "
                         f"{len(combined_chunks)}"
                     )
+                    print("\n===== HYBRID TOP RESULTS =====")
+
+                    for i, chunk in enumerate(
+                        combined_chunks[:10]
+                    ):
+
+                        print(
+                            f"\nResult {i+1}"
+                        )
+
+                        print(
+                            f"File: "
+                            f"{chunk.get('source_file','Unknown')}"
+                        )
+
+                        print(
+                            chunk.get(
+                                "content",
+                                ""
+                            )[:200]
+                        )
+
+                        print(
+                            "-" * 50
+                        )
 
                     sources = []
 
@@ -821,6 +889,7 @@ async def main(
                     print(
                         "\nSOURCES\n"
                     )
+
 
                     for source in sorted(
                         set(sources)

@@ -117,6 +117,8 @@ class GitHubGraphAgent:
                     f"Error parsing "
                     f"{file_path}: {e}"
                 )
+
+        return graph
     def find_commits_by_author(
         self,
         graph,
@@ -239,6 +241,7 @@ class GitHubGraphAgent:
             )
         )
 
+        return graph
 
 
 
@@ -270,6 +273,15 @@ class GitHubGraphAgent:
                 repo
             )
 
+            pr_text = str(prs)
+
+            lines = pr_text.split("\n")
+
+            for line in lines:
+
+                if "number" in line.lower():
+
+                    try:
             print("\nPR RAW RESPONSE:")
             print(prs)
             print(type(prs))
@@ -338,6 +350,7 @@ class GitHubGraphAgent:
                             )
                         )
 
+                    except Exception:
             except Exception:
 
                         pass
